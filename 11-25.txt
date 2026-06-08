@@ -1,0 +1,104 @@
+-- ============================================
+-- Задание 11. Добавить 4 посещения клуба
+-- ============================================
+INSERT INTO visits (member_id, visit_date, visit_time) VALUES
+(1, '2025-04-05', '10:00:00'),
+(1, '2025-04-06', '18:30:00'),
+(2, '2025-04-06', '12:15:00'),
+(4, '2025-04-07', '09:45:00');
+
+-- ============================================
+-- Задание 12. Вывести все тренировки с тренером «Иванов»
+-- ============================================
+SELECT * FROM trainings WHERE trainer = 'Иванов';
+
+-- ============================================
+-- Задание 13. Найти клиентов, у которых абонемент активен
+-- ============================================
+SELECT DISTINCT m.* 
+FROM members m
+JOIN membershippurchases mp ON m.id = mp.member_id
+WHERE mp.expiration_date > CURDATE();
+
+-- ============================================
+-- Задание 14. Отсортировать клиентов по дате рождения
+-- ============================================
+SELECT * FROM members ORDER BY birth_date;
+
+-- ============================================
+-- Задание 15. Вывести посещения за последние 7 дней
+-- ============================================
+SELECT * FROM visits 
+WHERE visit_date >= CURDATE() - INTERVAL 7 DAY;
+
+-- ============================================
+-- Задание 16. Подсчитать количество посещений для каждого клиента
+-- ============================================
+SELECT member_id, COUNT(*) AS visit_count 
+FROM visits 
+GROUP BY member_id;
+
+-- ============================================
+-- Задание 17. Найти среднюю заполняемость тренировок
+-- ============================================
+SELECT t.id, t.name, 
+       AVG(tr.registrations / t.max_participants) AS avg_fill_rate
+FROM trainings t
+JOIN (
+    SELECT training_id, COUNT(*) AS registrations
+    FROM trainingregistrations
+    GROUP BY training_id
+) tr ON t.id = tr.training_id
+GROUP BY t.id;
+
+-- ============================================
+-- Задание 18. Вывести тип абонемента и сколько раз его покупали
+-- ============================================
+SELECT m.name, COUNT(*) AS purchase_count
+FROM memberships m
+JOIN membershippurchases mp ON m.id = mp.membership_id
+GROUP BY m.id;
+
+
+-- ============================================
+-- Задание 19. Сгруппировать тренировки по тренерам, посчитать участников
+-- ============================================
+SELECT t.trainer, COUNT(tr.id) AS total_participants
+FROM trainings t
+LEFT JOIN trainingregistrations tr ON t.id = tr.training_id
+GROUP BY t.trainer;
+
+-- ============================================
+-- Задание 20. Найти клиентов, которые не посещали тренировки
+-- ============================================
+SELECT * FROM members 
+WHERE id NOT IN (SELECT DISTINCT member_id FROM trainingregistrations);
+
+-- ============================================
+-- Задание 21. Увеличить цену всех абонементов на 10%
+-- ============================================
+UPDATE Memberships SET price = price * 1.10 WHERE id > 0;
+
+-- ============================================
+-- Задание 22. Удалить тренировку, которая не имеет регистраций
+-- ============================================
+SET SQL_SAFE_UPDATES = 0;
+DELETE FROM Trainings 
+WHERE id NOT IN (SELECT DISTINCT training_id FROM TrainingRegistrations);
+SET SQL_SAFE_UPDATES = 1;
+
+-- ============================================
+-- Задание 23. Добавить столбец phone в Members
+-- ============================================
+ALTER TABLE members ADD COLUMN email VARCHAR(100) AFTER phone;
+
+-- ============================================
+-- Задание 24. Создать представление MemberActivity
+-- ============================================
+CREATE VIEW memberactivity AS
+SELECT 
+    m.id,
+    CONCAT(m.first_name, ' ', m.last_name) AS full_name,
+    (SELECT COUNT(*) FROM visits v WHERE v.member_id = m.id) AS total_visits,
+    (SELECT COUNT(*) FROM trainingregistrations tr WHERE tr.member_id = m.id) AS total_trainings
+FROM members m;
